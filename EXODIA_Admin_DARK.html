@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>نظام بيانات متقدم</title>
+<style>
+  body{font-family: Tahoma, sans-serif; background:#f4f6f8; padding:18px; color:#222; position:relative; min-height:100vh; padding-bottom:70px;}
+  .container{max-width:1200px;margin:0 auto}
+  .panel{background:#fff;border-radius:8px;padding:14px;border:1px solid #e0e0e0;margin-bottom:14px}
+  .header{font-weight:700;background:#f0f0f0;padding:10px;margin:-14px -14px 12px -14px;border-bottom:1px solid #ddd}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  input[type=text], input[type=password]{padding:10px;border:1px solid #bbb;border-radius:6px;width:300px;font-size:15px}
+  button{padding:10px 14px;border-radius:6px;border:1px solid #6b6b6b;background:#fff;cursor:pointer}
+  button.admin-btn{background:#222;color:#fff;border-color:#222}
+  .note{color:#b30000;display:none;margin-top:8px;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border:1px solid #e6e6e6;padding:8px;text-align:center;font-size:13px}
+  th{background:#fafafa;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .small{font-size:12px;color:#666}
+  .muted{color:#666;font-size:13px}
+  
+  /* Modal / Admin Overlay styles */
+  .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);justify-content:center;align-items:center;z-index:1000}
+  .modal-content{background:#fff;padding:20px;border-radius:8px;width:600px;max-width:95%;max-height:85vh;overflow-y:auto}
+  .modal-content h3{margin-top:0}
+  .modal-content input, .modal-content select{width:100%;margin-bottom:10px;padding:8px;border-radius:6px;border:1px solid #bbb}
+  .modal-content button{width:100%;margin-top:5px;background:#222;color:#fff}
+  .log-table { max-height: 200px; overflow-y: auto; margin-top: 10px; border: 1px solid #ddd; }
+
+  /* الأزرار العائمة في الأسفل */
+  .floating-container {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 999;
+    display: flex;
+    gap: 8px;
+  }
+  .support-btn {
+    background: #0088cc;
+    color: #fff;
+    border-color: #0088cc;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .support-btn:hover { background: #006699; }
+
+  /* شاشة إغلاق النظام */
+  #systemClosedScreen {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #111; color: #fff;
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+  #systemClosedScreen h1 { color: #ff4d4d; margin-bottom: 10px; }
+
+  @media(max-width:900px){ .grid{grid-template-columns:1fr} input[type=text], input[type=password]{width:100%} }
+</style>
+</head>
+<body>
+
+  <!-- شاشة تظهر عند إغلاق النظام بالكامل من الأدمن -->
+  <div id="systemClosedScreen">
+    <h1>النظام مغلق حالياً</h1>
+    <p>عذراً، تم إيقاف العمل على النظام مؤقتاً بواسطة الإدارة للصيانة أو التحديث.</p>
+    <p style="margin-top:15px;">للدعم الفني والاستفسار، يمكنك التواصل مع الإدارة مباشرة:</p>
+    <a href="https://t.me/Aksodey_1" target="_blank" class="support-btn" style="margin-top:5px;">💬 تواصل مع الدعم الفني</a>
+  </div>
+
+  <!-- نافذة تسجيل الدخول الخاصة بلوحة التحكم -->
+  <div id="adminLoginModal" class="modal">
+    <div class="modal-content" style="width:350px;">
+      <h3>كلمة مرور لوحة التحكم</h3>
+      <p class="small">الرجاء إدخال كلمة المرور الخاصة بالأدمن للوصول إلى لوحة التحكم.</p>
+      <input type="password" id="adminPassInput" placeholder="أدخل كلمة مرور الأدمن">
+      <button id="submitAdminLoginBtn">دخول للوحة التحكم</button>
+      <div id="adminLoginError" class="note">كلمة المرور غير صحيحة</div>
+      <button id="closeAdminLoginBtn" style="background:#ddd; color:#333; border-color:#ccc; margin-top:8px;">إلغاء</button>
+    </div>
+  </div>
+
+  <!-- نافذة تسجيل الدخول الإجبارية العامة للموقع -->
+  <div id="loginModal" class="modal">
+    <div class="modal-content" style="width:400px;">
+      <h3>تسجيل الدخول للموقع مطلوب</h3>
+      <p class="small">هذا الموقع محمي بكلمة مرور عامة. يرجى إدخالها للمتابعة.</p>
+      <input type="password" id="loginPassInput" placeholder="أدخل كلمة مرور الموقع">
+      <button id="submitLoginBtn">دخول</button>
+      <div id="loginError" class="note">كلمة المرور غير صحيحة</div>
+      <div style="margin-top:15px; text-align:center;">
+        <a href="https://t.me/Aksodey_1" target="_blank" style="color:#0088cc; font-size:13px; text-decoration:none;">💬 تواجه مشكلة في تسجيل الدخول؟ تواصل مع الدعم</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- لوحة الإدارة (Admin Panel Modal) -->
+  <div id="adminModal" class="modal">
+    <div class="modal-content">
+      <h3>لوحة التحكم الإدارية</h3>
+      
+      <!-- فتح وإغلاق النظام -->
+      <div style="margin-bottom: 12px; background: #fff3f3; padding: 10px; border-radius: 6px; border: 1px solid #ffcccc;">
+        <label class="small" style="font-weight:700; color:#b30000;">حالة التشغيل العامة للنظام:</label>
+        <select id="systemPowerSelect">
+          <option value="open">🟢 النظام مفتوح ويصرح بالعمل</option>
+          <option value="closed">🔴 النظام مغلق تماماً (إيقاف شامل)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label class="small">حماية الموقع العامة بكلمة مرور:</label>
+        <select id="lockStatusSelect">
+          <option value="disabled">معطلة (بدون كلمة مرور للموقع)</option>
+          <option value="enabled">مفعلة (محمي بكلمة مرور للموقع)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label class="small">تغيير كلمة مرور لوحة التحكم (الأدمن):</label>
+        <input type="password" id="newAdminPassInput" placeholder="اتركها فارغة إذا لم ترغب في تغييرها">
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label class="small">تغيير كلمة مرور الموقع العامة:</label>
+        <input type="password" id="newSitePassInput" placeholder="اتركها فارغة إذا لم ترغب في تغييرها">
+      </div>
+
+      <button id="saveAdminSettings">حفظ الإعدادات</button>
+      
+      <hr style="margin: 20px 0; border:0; border-top:1px solid #ddd;">
+
+      <!-- قسم فريق الدعم في لوحة التحكم -->
+      <div style="background:#f9f9f9; padding:10px; border-radius:6px; border:1px solid #ddd; margin-bottom:15px;">
+        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">فريق الدعم الفني</h4>
+        <p class="small" style="margin:0 0 8px 0;">المسؤول الحالي المرتبط بالنظام:</p>
+        <a href="https://t.me/Aksodey_1" target="_blank" class="support-btn" style="width:100%; box-sizing:border-box; text-align:center;">💬 مراسلة الدعم (Aksodey_1)</a>
+      </div>
+
+      <h4>سجل النشاطات</h4>
+      <div class="log-table">
+        <table>
+          <thead>
+            <tr>
+              <th>الحدث / النوع</th>
+              <th>التفاصيل</th>
+              <th>الوقت</th>
+            </tr>
+          </thead>
+          <tbody id="activityLogBody"></tbody>
+        </table>
+      </div>
+      <button id="clearLogsBtn" style="background:#b30000; margin-top:10px;">مسح السجل</button>
+      <button id="closeAdminBtn" style="background:#ddd; color:#333; border-color:#ccc; margin-top:5px;">إغلاق</button>
+    </div>
+  </div>
+
+  <!-- الأزرار العائمة في أسفل الصفحة على الجانب -->
+  <div class="floating-container">
+    <a href="https://t.me/Aksodey_1" target="_blank" class="support-btn">💬 الدعم الفني</a>
+    <button class="admin-btn" id="openAdminBtn">⚙️ لوحة التحكم</button>
+  </div>
+
+  <div class="container">
+    <div class="panel">
+      <div class="header">بحث موسّع</div>
+      <div class="controls">
+        <input id="mainInput" type="text" placeholder="أدخل رقم التعريف (14) أو رقم الهاتف (11)">
+        <button id="byIdBtn" type="button">بحث برقم التعريف</button>
+        <button id="byPhoneBtn" type="button">بحث بالموبايل</button>
+        <button id="clearCacheBtn" type="button">مسح السجلات المحفوظة</button>
+      </div>
+      <div id="note" class="note"></div>
+      <div class="small">الشروط: بحث برقم التعريف يحتاج 14 رقم تمامًا، وبحث بالموبايل يحتاج 11 رقم بدون بادئة +20.</div>
+    </div>
+
+    <!-- النتائج -->
+    <div id="resultArea" style="display:none">
+      <!-- بطاقة ملخص -->
+      <div class="panel">
+        <div class="header">ملخص البطاقة</div>
+        <div class="grid">
+          <div>
+            <table>
+              <tr><th>رقم الملف</th><td id="file_no"></td></tr>
+              <tr><th>رقم التعريف</th><td id="id_num"></td></tr>
+              <tr><th>الاسم الأساسي</th><td id="owner_name"></td></tr>
+              <tr><th>حالة البطاقة</th><td id="card_status"></td></tr>
+              <tr><th>نوع البطاقة</th><td id="card_type"></td></tr>
+              <tr><th>سبب الإيقاف</th><td id="stop_reason"></td></tr>
+            </table>
+          </div>
+
+          <div>
+            <table>
+              <tr><th>محافظة</th><td id="province"></td></tr>
+              <tr><th>قسم/مركز</th><td id="center"></td></tr>
+              <tr><th>مكتب التموين</th><td id="office"></td></tr>
+              <tr><th>المديرية</th><td id="directorate"></td></tr>
+              <tr><th>الإدارة</th><td id="administration"></td></tr>
+              <tr><th>التاجر</th><td id="merchant"></td></tr>
+            </table>
+          </div>
+
+          <div>
+            <table>
+              <tr><th>الهاتف المسجل</th><td id="phone"></td></tr>
+              <tr><th>هاتف بديل</th><td id="alt_phone"></td></tr>
+              <tr><th>تاريخ الإصدار</th><td id="issue_date"></td></tr>
+              <tr><th>تاريخ آخر تحديث</th><td id="last_update"></td></tr>
+              <tr><th>رصيد تموين</th><td id="tamween_balance"></td></tr>
+              <tr><th>حصة الخبز</th><td id="bread_quota"></td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- تفاصيل إضافية -->
+      <div class="panel">
+        <div class="header">تفاصيل إدارية وتقنية</div>
+        <table>
+          <tr>
+            <th>معرف السجل الداخلي</th><td id="internal_id"></td>
+            <th>رقم ملف الدعم</th><td id="support_file"></td>
+          </tr>
+          <tr>
+            <th>رمز المنطقة</th><td id="area_code"></td>
+            <th>كود المكتب</th><td id="office_code"></td>
+          </tr>
+          <tr>
+            <th>حالة المطابقة</th><td id="match_status"></td>
+            <th>نسبة الاعتماد</th><td id="confidence"></td>
+          </tr>
+          <tr>
+            <th>عدد الشكاوي</th><td id="complaints"></td>
+            <th>آخر معاملة</th><td id="last_tx"></td>
+          </tr>
+          <tr>
+            <th>عدد أفراد البطاقة</th><td id="family_count"></td>
+            <th>مؤشرات أخطاء</th><td id="error_flags"></td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- سجل المعاملات & ملاحظات -->
+      <div class="panel">
+        <div class="header">سجل المعاملات & الملاحظات</div>
+        <div id="txList" class="muted"></div>
+      </div>
+
+      <!-- جدول أفراد البطاقة -->
+      <div class="panel">
+        <div class="header">أفراد البطاقة</div>
+        <table id="familyTable">
+          <thead>
+            <tr>
+              <th>الاسم</th><th>رقم التعريف</th><th>صلة القرابة</th><th>تاريخ الميلاد</th>
+              <th>العمر</th><th>حالة</th><th>خبز</th><th>تموين</th><th>ملاحظات</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- بيانات إضافية موسعة -->
+      <div class="panel">
+        <div class="header">بيانات موسعة</div>
+        <table id="extendedTable">
+          <thead>
+            <tr><th>الحقل</th><th>القيمة</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+function checkSystemPower(){
+  const isClosed = localStorage.getItem('system_power_status') === 'closed';
+  if(isClosed){
+    document.getElementById('systemClosedScreen').style.display = 'flex';
+  } else {
+    document.getElementById('systemClosedScreen').style.display = 'none';
+    checkSiteLock();
+  }
+}
+
+function logActivity(type, details){
+  let logs = JSON.parse(localStorage.getItem('site_activity_logs') || '[]');
+  const time = new Date().toLocaleString('ar-EG');
+  logs.unshift({ type, details, time });
+  if(logs.length > 100) logs = logs.slice(0, 100);
+  localStorage.setItem('site_activity_logs', JSON.stringify(logs));
+}
+
+function renderLogs(){
+  const logs = JSON.parse(localStorage.getItem('site_activity_logs') || '[]');
+  const tbody = document.getElementById('activityLogBody');
+  tbody.innerHTML = '';
+  if(logs.length === 0){
+    tbody.innerHTML = `<tr><td colspan="3" class="muted">لا توجد سجلات حتى الآن</td></tr>`;
+    return;
+  }
+  logs.forEach(log => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${log.type}</td><td>${log.details}</td><td style="direction:ltr">${log.time}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function checkSiteLock(){
+  const isEnabled = localStorage.getItem('site_lock_enabled') === 'true';
+  const isAuthed = sessionStorage.getItem('site_authenticated') === 'true';
+
+  if(isEnabled && !isAuthed){
+    document.getElementById('loginModal').style.display = 'flex';
+  } else {
+    document.getElementById('loginModal').style.display = 'none';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  checkSystemPower();
+  
+  const isClosed = localStorage.getItem('system_power_status') === 'closed';
+  document.getElementById('systemPowerSelect').value = isClosed ? 'closed' : 'open';
+
+  const isEnabled = localStorage.getItem('site_lock_enabled') === 'true';
+  document.getElementById('lockStatusSelect').value = isEnabled ? 'enabled' : 'disabled';
+  
+  if(!sessionStorage.getItem('visited_logged') && !isClosed){
+    logActivity('دخول للموقع', 'زيارة الصفحة الرئيسية');
+    sessionStorage.setItem('visited_logged', 'true');
+  }
+});
+
+document.getElementById('submitLoginBtn').addEventListener('click', ()=>{
+  const pass = document.getElementById('loginPassInput').value;
+  const savedPass = localStorage.getItem('site_password') || '1234';
+  if(pass === savedPass){
+    sessionStorage.setItem('site_authenticated', 'true');
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('loginError').style.display = 'none';
+    logActivity('تسجيل دخول ناجح للموقع', 'تم إدخال كلمة مرور الموقع الصحيحة');
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+    logActivity('محاولة دخول فاشلة للموقع', 'كلمة مرور خاطئة');
+  }
+});
+
+// فتح لوحة التحكم وطلب كلمة مرور الأدمن
+document.getElementById('openAdminBtn').addEventListener('click', ()=>{
+  document.getElementById('adminPassInput').value = '';
+  document.getElementById('adminLoginError').style.display = 'none';
+  document.getElementById('adminLoginModal').style.display = 'flex';
+});
+
+document.getElementById('closeAdminLoginBtn').addEventListener('click', ()=>{
+  document.getElementById('adminLoginModal').style.display = 'none';
+});
+
+document.getElementById('submitAdminLoginBtn').addEventListener('click', ()=>{
+  const pass = document.getElementById('adminPassInput').value;
+  const savedAdminPass = localStorage.getItem('admin_password') || '1234';
+  if(pass === savedAdminPass){
+    document.getElementById('adminLoginModal').style.display = 'none';
+    renderLogs();
+    document.getElementById('adminModal').style.display = 'flex';
+    logActivity('فتح لوحة التحكم', 'تم إدخال كلمة مرور الأدمن بنجاح');
+  } else {
+    document.getElementById('adminLoginError').style.display = 'block';
+  }
+});
+
+document.getElementById('closeAdminBtn').addEventListener('click', ()=>{
+  document.getElementById('adminModal').style.display = 'none';
+});
+
+document.getElementById('clearLogsBtn').addEventListener('click', ()=>{
+  if(confirm("هل تريد مسح سجل النشاطات بالكامل؟")){
+    localStorage.removeItem('site_activity_logs');
+    renderLogs();
+  }
+});
+
+document.getElementById('saveAdminSettings').addEventListener('click', ()=>{
+  const powerStatus = document.getElementById('systemPowerSelect').value;
+  const lockStatus = document.getElementById('lockStatusSelect').value;
+  const newAdminPass = document.getElementById('newAdminPassInput').value.trim();
+  const newSitePass = document.getElementById('newSitePassInput').value.trim();
+
+  localStorage.setItem('system_power_status', powerStatus);
+  localStorage.setItem('site_lock_enabled', lockStatus === 'enabled' ? 'true' : 'false');
+  
+  if(newAdminPass){
+    localStorage.setItem('admin_password', newAdminPass);
+  }
+  if(newSitePass){
+    localStorage.setItem('site_password', newSitePass);
+  }
+  
+  alert("تم حفظ الإعدادات وتحديث كلمات المرور بنجاح!");
+  document.getElementById('adminModal').style.display = 'none';
+  checkSystemPower();
+  logActivity('تعديل إعدادات الإدارة', `حالة النظام: ${powerStatus} | الحماية: ${lockStatus}`);
+});
+
+/* ---------- أدوات البيانات والبحث ---------- */
+function hash32(str){
+  let h = 2166136261 >>> 0;
+  for(let i=0;i<str.length;i++){
+    h ^= str.charCodeAt(i);
+    h += (h<<1) + (h<<4) + (h<<7) + (h<<8) + (h<<24);
+    h >>>= 0;
+  }
+  return h >>> 0;
+}
+
+function pickDet(seed, arr, extra=0){
+  const h = hash32(seed + '|' + extra);
+  return arr[h % arr.length];
+}
+
+function numDet(seed, mod, extra=0){
+  const h = hash32(seed + '|' + extra);
+  return h % mod;
+}
+
+const maleFirst = ["أحمد","محمد","مروان","مصطفى","علي","يوسف","رامي","ياسين","سامي","رامز","سعيد","سامح","مهند","فضل","نادر","هشام","كريم","كامل","عمرو","خالد","طارق","سلمان","بهاء","سالم","تامر","أدهم","هيثم","إياد","نبيل","محمود","شريف","سراج","كاظم","صبري","بهلول","جواد","نقولا","حسن","رشدي","عماد","كامل","منتصر","غالب","سلمان","وائل","جمال","علاء","نادر"];
+const femaleFirst = ["نور","مريم","سارة","هبة","منى","هدى","هنا","ياسمين","نرمين","دينا","ريم","أمل","لمياء","نورا","منة","بسمة","رانيا","هدير","خلود","مي","سلمى","آية","شهد","جميلة","رشا","هيا","جميلة","سارة","ماغي","ليلى","نوال"];
+const fathers = ["محمود","أحمد","علي","سامي","جمال","فتحي","شاكر","مجدي","حسن","منصور","ياسر","جميل","صبري","مراد","حكيم","بلال"];
+const grands = ["عبدالرحمن","إبراهيم","خالد","مصطفى","رمضان","ضياء","بركات","زكي","المرسي","العمدة","مكرم","موسى"];
+const families = ["المنصوري","العوضي","حجازي","مرسي","الشرقاوي","الشاذلي","النبراوي","الغنام","الحمزاوي","البدري","الهاشمي","القيسي","الخطيب","الدسوقي","فرحات","السمري","البدوي","الفقي","قاسم","النشار","العمراني"];
+
+const provinces = ["القاهرة","الجيزة","الإسكندرية","الشرقية","الدقهلية","الغربية","المنوفية","الفيوم","بني سويف","سوهاج","قنا","أسيوط","الأقصر","المنيا","السويس","بورسعيد","دمياط","الإسماعيلية","البحر الأحمر","مطروح"];
+const centers = ["مركز 1","مركز 2","مركز 3","مركز 4","مركز 5","مركز 6","مركز 7","مركز 8","مركز 9"];
+const offices = Array.from({length:150},(_,i)=>"مكتب تموين "+(i+1));
+const merchants = Array.from({length:120},(_,i)=>"تاجر "+(i+1));
+const cardTypes = ["تموين","خبز","تموين + خبز","بطاقة خاصة"];
+const statuses = ["سارية","موقوفة","قيد المراجعة","منتهية","معلقة"];
+const reasons = ["-","خطأ إدخال","تبادل بيانات","عدم تحديث","طلب تجديد","إيقاف مؤقت","مشكلة مستندات","تدقيق داخلي","خلاف بيانات"];
+
+function makeId14(seed){
+  const h = hash32("id14|"+seed);
+  const start = (h % 2 === 0) ? '2' : '3';
+  let s = start;
+  let x = h;
+  while(s.length < 14){
+    s += String((x % 10));
+    x = (x * 1664525 + 1013904223) >>> 0;
+  }
+  return s.slice(0,14);
+}
+
+function dobFromSeed(seed){
+  const h = hash32("dob|"+seed);
+  const year = 1997 + (h % 15);
+  const month = 1 + (h % 12);
+  const day = 1 + (h % 28);
+  return `${String(day).padStart(2,'0')}-${String(month).padStart(2,'0')}-${year}`;
+}
+
+function ageFromDob(dob){
+  const parts = dob.split('-');
+  const y = parseInt(parts[2],10);
+  const currentYear = new Date().getFullYear();
+  return currentYear - y;
+}
+
+function createRecord(key){
+  const storageKey = "recultra_"+key;
+  const cached = localStorage.getItem(storageKey);
+  if(cached) return JSON.parse(cached);
+
+  const rec = {};
+  rec.internal_id = "INT"+String(hash32(key)%1000000000).padStart(9,'0');
+  rec.file_no = "FILE"+String(hash32("file|"+key)%1000000).padStart(6,'0');
+  rec.id_number = makeId14(key);
+  rec.owner_name = `${pickDet(key+"n1", maleFirst.concat(femaleFirst),1)} ${pickDet(key+"n2", fathers,2)} ${pickDet(key+"n3", grands,3)} ${pickDet(key+"n4", families,4)}`;
+  rec.province = pickDet(key, provinces,5);
+  rec.center = pickDet(key, centers,6);
+  rec.office = pickDet(key, offices,7);
+  rec.office_code = "OC"+(numDet(key,9999,8)).toString().padStart(4,'0');
+  rec.directorate = pickDet(key, ["المديرية العامة","مديرية قطاع","مديرية فرعية"],9);
+  rec.administration = pickDet(key, ["إدارة A","إدارة B","إدارة C","إدارة مرکزية"],10);
+  rec.merchant = pickDet(key, merchants,11);
+  rec.card_type = pickDet(key, cardTypes,12);
+  rec.card_status = pickDet(key, statuses,13);
+  rec.stop_reason = pickDet(key, reasons,14);
+  rec.phone = pickDet(key, ["01"+(100000000+numDet(key,900000000,15))],16);
+  rec.alt_phone = pickDet(key, ["01"+(100000000+numDet(key,800000000,17))],17);
+  rec.issue_date = `${1+numDet(key,28,18)}-${1+numDet(key,12,19)}-${1997 + (numDet(key,15,20))}`;
+  rec.last_update = `${1+numDet(key,28,21)}-${1+numDet(key,12,22)}-${2005 + (numDet(key,20,23))}`;
+  rec.tamween_balance = (numDet(key,500,24)+50)+" وحدة";
+  rec.bread_quota = (numDet(key,40,25)+5)+" رغيف/شهر";
+  rec.support_file = "SUP"+String(numDet(key,999999,26)).padStart(6,'0');
+  rec.area_code = "A"+String(numDet(key,99,27)).padStart(2,'0');
+  rec.match_status = pickDet(key, ["مطابق","غير مطابق","متوسط"],28);
+  rec.confidence = (50 + (numDet(key,50,29)))+"%";
+  rec.complaints = numDet(key,10,30);
+  rec.last_tx = "TX"+String(numDet(key,9999999,31));
+  rec.family_count = 1 + (numDet(key,7,32));
+  rec.error_flags = numDet(key,6,33) ? "يوجد" : "-";
+
+  const txCount = 5 + (numDet(key,4,34));
+  rec.transactions = [];
+  for(let i=0;i<txCount;i++){
+    rec.transactions.push({
+      id: "T"+String(numDet(key+i,999999,40+i)).padStart(6,'0'),
+      date: `${1+numDet(key+i,28,50+i)}-${1+numDet(key+i,12,60+i)}-${2008 + (numDet(key+i,12,70+i))}`,
+      type: pickDet(key+i, ["صرف تموين","تعديل بيانات","تجديد","تحويل","إلغاء"],80+i),
+      amount: (numDet(key+i,200,90+i)+1) + " وحدة"
+    });
+  }
+
+  rec.family = [];
+  rec.family.push(makeFamilyMemberDeterministic(key, "رب أسرة", 0));
+  const relationsList = ["زوجة","ابن","ابنة","حفيد","حفيدة","زوجة ثانية","ابن بالغ"];
+  for(let i=1;i<rec.family_count;i++){
+    const rel = pickDet(key + "_rel" + i, relationsList, 100+i);
+    rec.family.push(makeFamilyMemberDeterministic(key, rel, i));
+  }
+
+  rec.extended = [];
+  const extendedFields = [
+    "مستوى الدخل","حالة التوظيف","عدد المعالين","مستوى التعليم",
+    "حالة السكن","نوع السكن","رقم الملف المالي","قيمة الدعم الشهرية",
+    "تاريخ اخر مراجعه","رقم قرار","حالة التحقيق","ملاحظات ادارية",
+    "ملاحظات فنية","قناة الادخال","رمز التتبع","قيمة استحقاق سنوي",
+    "حصة دعم استثنائي","خدمة العملاء","معدل الشكاوى","معدل العمليات"
+  ];
+  extendedFields.forEach((f,idx)=>{
+    rec.extended.push({field:f, value: pickDet(key+'ext'+idx, ["-","مقبول","مرفوض","قيد","مؤجل","تم"],200+idx)});
+  });
+
+  localStorage.setItem(storageKey, JSON.stringify(rec));
+  return rec;
+}
+
+function makeFamilyMemberDeterministic(key, relation, idx){
+  const femaleRelations = ["زوجة","ابنة","حفيدة","زوجة ثانية"];
+  const isFemale = femaleRelations.includes(relation);
+  const fname = pickDet(key + "_fn" + idx, isFemale ? femaleFirst : maleFirst, 300+idx);
+  const fa = pickDet(key + "_fa" + idx, fathers, 400+idx);
+  const gr = pickDet(key + "_gr" + idx, grands, 500+idx);
+  const fam = pickDet(key + "_fm" + idx, families, 600+idx);
+  const name = `${fname} ${fa} ${gr} ${fam}`;
+  const nid = makeId14(key + "_m" + idx);
+  const dob = dobFromSeed(key + "_m" + idx);
+  const age = ageFromDob(dob);
+  return {
+    name, nid, relation, dob, age, status: pickDet(key + "_st" + idx, ["ساري","متوفي","معلق"],700+idx),
+    bread: (numDet(key + "_b" + idx,2,800+idx)? "✔":"-"),
+    tamween: (numDet(key + "_t" + idx,2,900+idx)? "✔":"-"),
+    notes: pickDet(key + "_note" + idx, ["-","غياب تحديث","خطأ بيانات","مطلوب تحويل","غير مؤهل"],1000+idx)
+  };
+}
+
+function renderRecord(rec){
+  document.getElementById('file_no').innerText = rec.file_no;
+  document.getElementById('id_num').innerText = rec.id_number;
+  document.getElementById('owner_name').innerText = rec.owner_name;
+  document.getElementById('card_status').innerText = rec.card_status;
+  document.getElementById('card_type').innerText = rec.card_type;
+  document.getElementById('stop_reason').innerText = rec.stop_reason;
+
+  document.getElementById('province').innerText = rec.province;
+  document.getElementById('center').innerText = rec.center;
+  document.getElementById('office').innerText = rec.office;
+  document.getElementById('directorate').innerText = rec.directorate;
+  document.getElementById('administration').innerText = rec.administration;
+  document.getElementById('merchant').innerText = rec.merchant;
+
+  document.getElementById('phone').innerText = rec.phone;
+  document.getElementById('alt_phone').innerText = rec.alt_phone;
+  document.getElementById('issue_date').innerText = rec.issue_date;
+  document.getElementById('last_update').innerText = rec.last_update;
+  document.getElementById('tamween_balance').innerText = rec.tamween_balance;
+  document.getElementById('bread_quota').innerText = rec.bread_quota;
+
+  document.getElementById('internal_id').innerText = rec.internal_id;
+  document.getElementById('support_file').innerText = rec.support_file;
+  document.getElementById('area_code').innerText = rec.area_code;
+  document.getElementById('office_code').innerText = rec.office_code;
+  document.getElementById('match_status').innerText = rec.match_status;
+  document.getElementById('confidence').innerText = rec.confidence;
+  document.getElementById('complaints').innerText = rec.complaints;
+  document.getElementById('last_tx').innerText = rec.last_tx;
+  document.getElementById('family_count').innerText = rec.family_count;
+  document.getElementById('error_flags').innerText = rec.error_flags;
+
+  const txDiv = document.getElementById('txList');
+  txDiv.innerHTML = '';
+  rec.transactions.forEach(t=>{
+    txDiv.innerHTML += `<div class="muted">[${t.date}] ${t.type} — ${t.id} — ${t.amount}</div>`;
+  });
+
+  const tbody = document.querySelector('#familyTable tbody');
+  tbody.innerHTML = '';
+  rec.family.forEach(f=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${f.name}</td><td>${f.nid}</td><td>${f.relation}</td><td>${f.dob}</td>
+                    <td>${f.age}</td><td>${f.status}</td><td>${f.bread}</td><td>${f.tamween}</td><td>${f.notes}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const extBody = document.querySelector('#extendedTable tbody');
+  extBody.innerHTML = '';
+  rec.extended.forEach(e=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="text-align:right">${e.field}</td><td>${e.value}</td>`;
+    extBody.appendChild(tr);
+  });
+
+  document.getElementById('resultArea').style.display = 'block';
+}
+
+function validIdInput(v){ return /^[0-9]{14}$/.test(v); }
+function validPhoneInput(v){ return /^[0-9]{11}$/.test(v) && !v.startsWith("+20"); }
+
+document.getElementById('byIdBtn').addEventListener('click', ()=>{
+  const v = document.getElementById('mainInput').value.trim();
+  document.getElementById('note').style.display = 'none';
+  if(!validIdInput(v)){
+    document.getElementById('note').innerText = "ادخل المعلومات الصحيحة: بحث برقم التعريف يحتاج 14 رقمًا بالضبط.";
+    document.getElementById('note').style.display = 'block';
+    return;
+  }
+  logActivity('بحث برقم التعريف (14 رقم)', v);
+  const rec = createRecord("ID_"+v);
+  renderRecord(rec);
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+document.getElementById('byPhoneBtn').addEventListener('click', ()=>{
+  const v = document.getElementById('mainInput').value.trim();
+  document.getElementById('note').style.display = 'none';
+  if(!validPhoneInput(v)){
+    document.getElementById('note').innerText = "ادخل المعلومات الصحيحة: بحث بالموبايل يحتاج 11 رقمًا بدون +20.";
+    document.getElementById('note').style.display = 'block';
+    return;
+  }
+  logActivity('بحث برقم الهاتف (11 رقم)', v);
+  const rec = createRecord("PH_"+v);
+  renderRecord(rec);
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+document.getElementById('clearCacheBtn').addEventListener('click', ()=>{
+  if(confirm("مسح جميع السجلات المحفوظة محليًا؟")) {
+    Object.keys(localStorage).forEach(k=>{
+      if(k.startsWith("recultra_")) localStorage.removeItem(k);
+    });
+    alert("تم المسح.");
+    location.reload();
+  }
+});
+
+document.getElementById('mainInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') document.getElementById('byIdBtn').click();
+});
+</script>
+</body>
+</html>
