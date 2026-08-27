@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ار" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدير سياق العمل (GCC)</title>
+    <style>
+        body { font-family: Tahoma, sans-serif; background: #121212; color: #e0e0e0; padding: 15px; margin: 0; }
+        .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        input, textarea, button { width: 100%; padding: 10px; margin-top: 8px; margin-bottom: 15px; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px; box-sizing: border-box; }
+        button { background: #007acc; cursor: pointer; font-weight: bold; border: none; }
+        button:hover { background: #005999; }
+        pre { background: #000; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; color: #00ff66; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+    <h2>🛠️ نظام سياق العمل (GCC)</h2>
+
+    <div class="card">
+        <h3>تسجيل سياق جديد</h3>
+        <label>عنوان التعديل (Intent):</label>
+        <input type="text" id="intentInput" value="العمو اكسوديا يرحب بكم">
+        
+        <label>تفاصيل ما قمت به:</label>
+        <textarea id="descInput" rows="3">تم إضافة رسالة الترحيب الخاصة بالعمو اكسوديا وتفعيل الواجهة البرمجية بنجاح.</textarea>
+        
+        <button onclick="saveContext()">حفظ وتحديث السجل</button>
+    </div>
+
+    <div class="card">
+        <h3>📜 السجل الحالي (محفوظ تلقائياً)</h3>
+        <pre id="logOutput">جاري تحميل السجلات...</pre>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const savedLogs = localStorage.getItem('gcc_permanent_logs');
+            if (savedLogs) {
+                document.getElementById('logOutput').innerText = savedLogs;
+            } else {
+                document.getElementById('logOutput').innerText = "لا توجد سجلات حتى الآن...";
+            }
+        };
+
+        function saveContext() {
+            const intent = document.getElementById('intentInput').value;
+            const desc = document.getElementById('descInput').value;
+            
+            if(!intent || !desc) {
+                alert("الرجاء ملء الحقول!");
+                return;
+            }
+
+            const timestamp = new Date().toLocaleString();
+            const logEntry = `-----------------------------------\n[التوقيت]: ${timestamp}\n[الهدف]: ${intent}\n[التفاصيل]: ${desc}\n\n`;
+
+            let currentLogs = localStorage.getItem('gcc_permanent_logs');
+            if (!currentLogs || currentLogs === "لا توجد سجلات حتى الآن...") {
+                currentLogs = "";
+            }
+
+            const updatedLogs = logEntry + currentLogs;
+            localStorage.setItem('gcc_permanent_logs', updatedLogs);
+            
+            document.getElementById('logOutput').innerText = updatedLogs;
+            alert("✅ تم حفظ السياق بشكل دائم بنجاح!");
+        }
+    </script>
+
+</body>
+</html>
