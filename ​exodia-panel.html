@@ -1,45 +1,48 @@
 <!DOCTYPE html>
-<html lang="ار" dir="rtl">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدير سياق العمل (GCC)</title>
+    <title>نظام سياق العمل (GCC)</title>
     <style>
         body { font-family: Tahoma, sans-serif; background: #121212; color: #e0e0e0; padding: 15px; margin: 0; }
         .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         input, textarea, button { width: 100%; padding: 10px; margin-top: 8px; margin-bottom: 15px; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px; box-sizing: border-box; }
-        button { background: #007acc; cursor: pointer; font-weight: bold; border: none; }
+        button { background: #007acc; cursor: pointer; font-weight: bold; border: none; margin-bottom: 5px; }
         button:hover { background: #005999; }
+        .btn-green { background: #28a745; }
+        .btn-green:hover { background: #218838; }
         pre { background: #000; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; color: #00ff66; white-space: pre-wrap; }
     </style>
 </head>
 <body>
 
-    <h2>🛠️ نظام سياق العمل (GCC)</h2>
+    <h2>🛠️ نظام سياق العمل (GCC - Git Context)</h2>
 
     <div class="card">
-        <h3>تسجيل سياق جديد</h3>
+        <h3>إضافة سجل تتبع جديد (Commit)</h3>
         <label>عنوان التعديل (Intent):</label>
         <input type="text" id="intentInput" value="العمو اكسوديا يرحب بكم">
         
-        <label>تفاصيل ما قمت به:</label>
+        <label>تفاصيل التعديل (Details):</label>
         <textarea id="descInput" rows="3">تم إضافة رسالة الترحيب الخاصة بالعمو اكسوديا وتفعيل الواجهة البرمجية بنجاح.</textarea>
         
-        <button onclick="saveContext()">حفظ وتحديث السجل</button>
+        <button onclick="saveContext()">إضافة إلى السجل (Commit)</button>
+        <button class="btn-green" onclick="downloadLogFile()">📥 تحميل ملف السجلات (commit.md)</button>
     </div>
 
     <div class="card">
-        <h3>📜 السجل الحالي (محفوظ تلقائياً)</h3>
+        <h3>📜 تاريخ الـ Commits</h3>
         <pre id="logOutput">جاري تحميل السجلات...</pre>
     </div>
 
     <script>
         window.onload = function() {
-            const savedLogs = localStorage.getItem('gcc_permanent_logs');
+            const savedLogs = localStorage.getItem('gcc_git_logs');
             if (savedLogs) {
                 document.getElementById('logOutput').innerText = savedLogs;
             } else {
-                document.getElementById('logOutput').innerText = "لا توجد سجلات حتى الآن...";
+                document.getElementById('logOutput').innerText = "# GCC Commit History\nلا توجد سجلات حتى الآن...";
             }
         };
 
@@ -53,18 +56,28 @@
             }
 
             const timestamp = new Date().toLocaleString();
-            const logEntry = `-----------------------------------\n[التوقيت]: ${timestamp}\n[الهدف]: ${intent}\n[التفاصيل]: ${desc}\n\n`;
+            const logEntry = `## [Commit] - ${timestamp}\n- **Intent:** ${intent}\n- **Details:** ${desc}\n-----------------------------------\n\n`;
 
-            let currentLogs = localStorage.getItem('gcc_permanent_logs');
-            if (!currentLogs || currentLogs === "لا توجد سجلات حتى الآن...") {
-                currentLogs = "";
+            let currentLogs = localStorage.getItem('gcc_git_logs');
+            if (!currentLogs || currentLogs.includes("لا توجد سجلات حتى الآن...")) {
+                currentLogs = "# GCC Commit History\n\n";
             }
 
             const updatedLogs = logEntry + currentLogs;
-            localStorage.setItem('gcc_permanent_logs', updatedLogs);
+            localStorage.setItem('gcc_git_logs', updatedLogs);
             
             document.getElementById('logOutput').innerText = updatedLogs;
-            alert("✅ تم حفظ السياق بشكل دائم بنجاح!");
+            alert("✅ تم تسجيل الـ Commit بنجاح!");
+        }
+
+        // ميزة تحميل السجلات كملف لتتمكن من رفعه لـ GitHub
+        function downloadLogFile() {
+            const logs = localStorage.getItem('gcc_git_logs') || "# GCC Commit History\n";
+            const blob = new Blob([logs], { type: 'text/markdown;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "commit.md";
+            link.click();
         }
     </script>
 
