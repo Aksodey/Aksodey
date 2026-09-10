@@ -1,18 +1,59 @@
-<div align="center" style="background: #121b22; padding: 20px; border-radius: 10px; color: white;">
+<div align="center" style="background: #111b21; padding: 25px; border-radius: 12px; color: white;">
 
-### 🎵 بوت طلبات الأغاني عبر الواتساب
+### 🤖 لوحة تحكم بوت الأوامر (خدمات الواتساب)
 
-<p style="font-size: 14px; color: #8696a0;">اكتب اسم الأغنية التي تريدها واضغط إرسال لتصلني عبر الواتساب فوراً!</p>
+<p style="font-size: 14px; color: #8696a0;">اختر الأمر المناسب أو اطلب خدمتك مباشرة وسيتفاعل معك البوت عبر الواتساب!</p>
 
-<table style="width: 100%; max-width: 400px; background: #202c33; border-radius: 8px; padding: 15px; text-align: right;">
+<table style="width: 100%; max-width: 420px; background: #202c33; border-radius: 10px; padding: 15px; text-align: right; border-spacing: 10px;">
   <tr>
     <td>
-      <input type="text" id="songName" placeholder="اكتب اسم الأغنية هنا..." style="width: 100%; padding: 10px; border-radius: 5px; border: none; outline: none; background: #2a3942; color: white; font-size: 14px; box-sizing: border-box;" />
+      <a href="https://wa.me/201277860563?text=⚡%20أمر:%20تشغيل%20أغنية" target="_blank" style="display: block; background: #005c4b; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center;">
+        🎵 1. طلب وتشغيل أغنية
+      </a>
     </td>
   </tr>
   <tr>
-    <td style="padding-top: 10px; text-align: center;">
-      <a id="whatsappBtn" href="https://wa.me/201277860563?text=مرحباً،%20أريد%20طلب%20أغنية:" target="_blank" style="display: inline-block; background: #00a884; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; width: 100%; box-sizing: border-box;">
+    <td>
+      <a href="https://wa.me/201277860563?text=⚡%20أمر:%20معلومات%20عن%20المطور" target="_blank" style="display: block; background: #005c4b; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center;">
+        👨‍💻 2. معلومات عن المطور
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <a href="https://wa.me/201277860563?text=⚡%20أمر:%20تواصل%20مع%20الدعم" target="_blank" style="display: block; background: #005c4b; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center;">
+        💬 3. تواصل مباشر مع الدعم
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding-top: 10px;">
+      <input type="text" id="customCommand" placeholder="أو اكتب أمرًا مخصصاً هنا..." style="width: 100%; padding: 12px; border-radius: 8px; border: none; outline: none; background: #2a3942; color: white; font-size: 14px; box-sizing: border-box;" />
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <a id="sendCustomBtn" href="https://wa.me/201277860563?text=⚡%20أمر:%20مرحباً" target="_blank" style="display: block; background: #00a884; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center;">
+        🚀 تنفيذ الأمر عبر الواتساب
+      </a>
+    </td>
+  </tr>
+</table>
+
+</div>
+
+<script>
+  const customInput = document.getElementById('customCommand');
+  const sendBtn = document.getElementById('sendCustomBtn');
+  
+  customInput.addEventListener('input', function() {
+    if(customInput.value.trim() !== "") {
+      sendBtn.href = "https://wa.me/201277860563?text=" + encodeURIComponent("⚡ أمر مخصص من الموقع: " + customInput.value);
+    } else {
+      sendBtn.href = "https://wa.me/201277860563?text=" + encodeURIComponent("⚡ أمر: مرحباً");
+    }
+  });
+</script>
         🎧 اطلب الأغنية الآن
       </a>
     </td>
