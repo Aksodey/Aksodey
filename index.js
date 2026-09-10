@@ -1,25 +1,31 @@
-<div align="center" style="background: #111b21; padding: 25px; border-radius: 12px; color: white;">
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
 
-### 🤖 لوحة تحكم بوت الأوامر (خدمات الواتساب)
+const client = new Client({
+    authStrategy: new LocalAuth()
+});
 
-<p style="font-size: 14px; color: #8696a0;">اختر الأمر المناسب أو اطلب أغنيتك وسيتواصل معك البوت عبر الواتساب فوراً!</p>
+client.on('qr', (qr) => {
+    console.log('امسح رمز الاستجابة السريعة التالي لتسجيل الدخول برقمك:');
+    qrcode.generate(qr, { small: true });
+});
 
-<table style="width: 100%; max-width: 420px; background: #202c33; border-radius: 10px; padding: 15px; text-align: right; border-spacing: 10px;">
-  <tr>
-    <td>
-      <a href="https://wa.me/201277860563?text=⚡%20أمر:%20طلب%20تشغيل%20أغنية" target="_blank" style="display: block; background: #005c4b; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center;">
-        🎵 طلب وتشغيل أغنية
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding-top: 10px;">
-      <input type="text" id="customCommand" placeholder="اكتب اسم الأغنية أو الأمر هنا..." style="width: 100%; padding: 12px; border-radius: 8px; border: none; outline: none; background: #2a3942; color: white; font-size: 14px; box-sizing: border-box;" />
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <a id="sendCustomBtn" href="https://wa.me/201277860563?text=⚡%20أمر:%20مرحباً" target="_blank" style="display: block; background: #00a884; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center;">
+client.on('ready', () => {
+    console.log('تم ربط البوت برقم الواتساب بنجاح وهو جاهز الآن! 🚀');
+});
+
+client.on('message', async (message) => {
+    const text = message.body.trim();
+    const targetPhone = "201277860563"; // رقم الهاتف الأساسي المراد ربطه
+
+    // إذا طلب المستخدم كود الربط أو الباسورد
+    if (text === '!ربط' || text === '!password' || text === 'باسورد') {
+        await message.reply(`🔐 كود الربط الخاص بالرقم هو: *${targetPhone}*`);
+        console.log(`تم إرسال كود الربط المطابق للرقم: ${targetPhone}`);
+    }
+});
+
+client.initialize();
         🚀 إرسال الطلب إلى الواتساب
       </a>
     </td>
